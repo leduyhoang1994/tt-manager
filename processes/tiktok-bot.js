@@ -3,10 +3,25 @@ class TiktokBot {
 
   COMMANDS = {
     REPORT_STATUS: (id, command, data) => {
+      console.log('Report Status Success');
       this.reportMotherShip(id, command, {
-        status: `I'm OK.`
+        status: 1,
+        message: `I'm OK.`,
+      });
+    },
+    SETUP: (id, command, data) => {
+      this.id = id;
+      this.name = data.name;
+      console.log('Setup success');
+      this.reportMotherShip(id, command, {
+        message: `Setup succeed.`,
       });
     }
+  };
+
+  CALLS = {
+    HELP: 'HELP',
+    WHO_AM_I: 'WHO_AM_I'
   };
 
   constructor(username) {
@@ -15,7 +30,6 @@ class TiktokBot {
 
   hearingMotherShip() {
     process.on('message', (packet) => {
-      console.log(`Receive from mothership: `, packet);
       const topic = packet.topic;
 
       if (topic === 'COMMAND') {
@@ -36,10 +50,26 @@ class TiktokBot {
   }
 
   reportMotherShip(id, command, data) {
+    data.botId = id;
+    data.reportToCommand = command;
+    data.botInfo = this;
+    data.type = 'EXECUTE_ORDER';
+
     process.send({
       type: 'process:msg',
-      botId: id,
-      reportToCommand: command,
+      data
+    });
+  }
+
+  callMotherShip(id, command, data = {}) {
+    data.botId = id;
+    data.command = command;
+    data.botInfo = this;
+    data.type = 'BOT_CALL';
+
+    console.log(`Call mothership for ${command}`);
+    process.send({
+      type: 'process:msg',
       data
     });
   }
@@ -50,9 +80,11 @@ class TiktokBot {
     this.hearingMotherShip();
 
     return new Promise((resolve, reject) => {
-      // setInterval(() => {
-      //   console.log(`Bot[${this.username}] is still alive !`);
-      // }, 1000);
+      setInterval(() => {
+        if (this.id === undefined) {
+          this.callMotherShip(this.id, this.CALLS.WHO_AM_I);
+        }
+      }, 5000);
     });
   }
 }
